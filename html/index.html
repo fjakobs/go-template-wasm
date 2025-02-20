@@ -65,7 +65,12 @@ async function init() {
 
 	const templateEditor = ace.edit("textarea1");
 	templateEditor.session.setMode("ace/mode/text");
-	templateEditor.setValue("Juhu {{.a}} {{.b}}\n{{if .foo}} T1 {{else}} T0 {{end}}\n{{randomCase \"Juhu Kinners\"}}\n{{juhu \"Fabian\"}}\n");
+	templateEditor.setValue(`Juhu {{.a}} {{.b}}
+{{if .foo}} T1 {{else}} T0 {{end}}
+{{randomCase "Juhu Kinners"}}
+{{juhu "Fabian"}}
+{{date}}
+{{join "." 1 2 3 4}}`);
 	templateEditor.moveCursorTo(0, 0);
 
     const jsonEditor = ace.edit("textarea2");
@@ -82,7 +87,14 @@ async function init() {
 function juhu(str) {
 	return \`Juhu \${str || "Kinners"}\`;
 }
-`);
+
+function join(sep, ...str) {
+    return str.join(sep);
+}
+
+function date() {
+    return new Date().toString();
+}`);
 	functionEditor.moveCursorTo(0, 0);
 
 	submitButton.addEventListener('click', () => {
