@@ -26,6 +26,10 @@ func jsValueToGoType(value js.Value) any {
 		return value.Float()
 	case js.TypeString:
 		return value.String()
+	case js.TypeFunction:
+		return func(args ...interface{}) (interface{}, error) {
+			return value.Invoke(args...), nil
+		}
 	case js.TypeObject:
 		// Handle Arrays separately
 		if js.Global().Get("Array").Call("isArray", value).Bool() {
@@ -60,14 +64,16 @@ func jsValueToMap(v js.Value) map[string]any {
 func TemplateJs(this js.Value, inputs []js.Value) interface{} {
 	values := make(map[string]any)
 	values = jsValueToMap(inputs[0])
+	templateStr := inputs[1].String()
+	jsFuncs := jsValueToMap(inputs[2])
 
-	str, _ := Template(values, inputs[1].String())
+	str, _ := Template(values, templateStr, jsFuncs)
 	return str
 }
 
-func Template(values map[string]any, templateStr string) (string, error) {
+func Template(values map[string]any, templateStr string, funcs template.FuncMap) (string, error) {
 	writer := &bytes.Buffer{}
-	tmpl, err := template.New("").Parse(templateStr) //.Funcs(helpers)
+	tmpl, err := template.New("").Funcs(funcs).Parse(templateStr)
 	if err != nil {
 		return "", err
 	}

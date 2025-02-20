@@ -9,6 +9,11 @@
 				margin-top: 10px;
 				font-family: monospace;
 			}
+
+			.editor {
+				width: 100%;
+				height: 150px;
+			}
 		</style>
 	</head>
     <body>
@@ -16,11 +21,15 @@
 		<div style="display: flex; gap: 10px;">
 			</div>
 				<h3>Template</h3>
-				<div id="textarea1" style="width: 100%; height: 200px;"></div>
+				<div id="textarea1" class="editor"></div>
 			</div>
 			<div>
 				<h3>Values (JSON)</h3>
-				<div id="textarea2" style="width: 100%; height: 200px;"></div>
+				<div id="textarea2" class="editor"></div>
+			</div>
+			<div>
+				<h3>Functions</h3>
+				<div id="textarea3" class="editor"></div>
 			</div>
 		</div>
 		<button id="submitButton" style="margin-top: 10px;">Submit</button>
@@ -56,7 +65,7 @@ async function init() {
 
 	const templateEditor = ace.edit("textarea1");
 	templateEditor.session.setMode("ace/mode/text");
-	templateEditor.setValue("Juhu {{.a}} {{.b}}\n{{if .foo}} T1 {{else}} T0 {{end}}\n");
+	templateEditor.setValue("Juhu {{.a}} {{.b}}\n{{if .foo}} T1 {{else}} T0 {{end}}\n{{randomCase \"Juhu Kinners\"}}\n{{juhu \"Fabian\"}}\n");
 	templateEditor.moveCursorTo(0, 0);
 
     const jsonEditor = ace.edit("textarea2");
@@ -64,13 +73,32 @@ async function init() {
 	jsonEditor.setValue(JSON.stringify({a: 1, b: "2", foo: 1}, null, 2))
 	jsonEditor.moveCursorTo(0, 0);
 
+	const functionEditor = ace.edit("textarea3");
+	functionEditor.session.setMode("ace/mode/javascript");
+	functionEditor.setValue(`function randomCase(str) {
+	return str.split('').map(c => Math.random() > 0.5 ? c.toUpperCase() : c.toLowerCase()).join('');
+}
+
+function juhu(str) {
+	return \`Juhu \${str || "Kinners"}\`;
+}
+`);
+	functionEditor.moveCursorTo(0, 0);
+
 	submitButton.addEventListener('click', () => {
 		const templateStr = templateEditor.getValue();
 		const valuesStr = jsonEditor.getValue();
 		const values = JSON.parse(valuesStr);
 		
+		const functionStr = functionEditor.getValue();
+		const scope = {};
+
+		(function () { 
+			eval(functionStr.replace(/function\s+(\w+)/g, 'this.$1 = function')); 
+		}).call(scope);
+
 		console.time('Go execution time');
-		const result = template(values, templateStr);
+		const result = template(values, templateStr, scope);
 		console.timeEnd('Go execution time');
 		resultEl.innerText = result;
 	});
